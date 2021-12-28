@@ -1,6 +1,5 @@
 pub struct Lexer {
     input: String,
-    position: usize,
     read_position: usize,
     ch: Option<char>,
 }
@@ -29,7 +28,6 @@ impl Lexer {
     pub fn new(input: String) -> Lexer {
         let mut l = Lexer {
             input,
-            position: 0,
             read_position: 0,
             ch: None,
         };
@@ -43,7 +41,6 @@ impl Lexer {
         } else {
             self.ch = Some(self.input.chars().nth(self.read_position).unwrap());
         }
-        self.position = self.read_position;
         self.read_position += 1;
         self.ch
     }
