@@ -3,7 +3,7 @@ pub struct Lexer {
     read_position: usize,
     ch: Option<char>,
 }
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     OpenParen,
     CloseParen,
