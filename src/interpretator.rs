@@ -122,10 +122,14 @@ pub struct Interpretator<'a> {
     pub global_scope: Scope<'a>,
 }
 
-impl Interpretator<'_> {
-    pub fn new() -> Interpretator<'static> {
+impl<'a> Interpretator<'a> {
+    pub fn new(global_scope: Option<Scope<'a>>) -> Interpretator<'a> {
+        let global_scope = match global_scope {
+            Some(s) => s,
+            None => Scope::new(None),
+        };
         Interpretator {
-            global_scope: Scope::new(None),
+            global_scope: global_scope,
         }
     }
 
@@ -177,5 +181,17 @@ mod tests {
         scope.set("a".to_string(), Value::Number(2.0));
         assert_eq!(scope.get("a"), Some(&Value::Number(2.0)));
         assert_eq!(parent.get("a"), Some(&Value::Number(1.0)));
+    }
+
+    #[test]
+    fn test_interpretator_initialize_without_global_scope() {
+        let mut interpretator = Interpretator::new(None);
+        interpretator
+            .global_scope
+            .set("a".to_string(), Value::Number(1.0));
+        assert_eq!(
+            interpretator.global_scope.get("a").unwrap(),
+            &Value::Number(1.0)
+        );
     }
 }
