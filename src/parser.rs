@@ -1,6 +1,8 @@
 use super::lexer::*;
 use super::nodes::*;
 
+use std::error;
+use std::fmt;
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
@@ -11,6 +13,18 @@ pub enum ParserError {
     UnexpectedToken(Token, String),
     UnexpectedEndOfFile,
     ParserStateError(String),
+}
+
+impl error::Error for ParserError {}
+
+impl fmt::Display for ParserError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParserError::UnexpectedToken(t, s) => write!(f, "Unexpected token: {:?} {}", t, s),
+            ParserError::UnexpectedEndOfFile => write!(f, "Unexpected end of file"),
+            ParserError::ParserStateError(s) => write!(f, "Parser state error: {}", s),
+        }
+    }
 }
 
 impl Parser {
@@ -286,7 +300,7 @@ mod tests {
     #[test]
     fn test_parser_from_source() {
         let source = "
-            (fn foo [x y] (+ x y))
+            (defn foo [x y] (+ x y))
             (foo 1 2)
         ";
         let mut parser = Parser::from_source(source.to_owned()).unwrap();
@@ -295,7 +309,7 @@ mod tests {
             program,
             Node::Program(vec![
                 Node::FunctionCall(
-                    "fn".to_string(),
+                    "defn".to_string(),
                     vec![
                         Node::Variable("foo".to_string()),
                         Node::Atom(Value::List(vec![

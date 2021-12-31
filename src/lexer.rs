@@ -1,3 +1,5 @@
+use std::{error, fmt::Display};
+
 pub struct Lexer {
     input: String,
     read_position: usize,
@@ -26,6 +28,17 @@ pub enum LexerError {
     InvalidNumber(String),
     UnclosedString(String),
 }
+impl Display for LexerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LexerError::InvalidCharacter(ch) => write!(f, "LexerError: Invalid char {}", ch),
+            LexerError::InvalidIdentifier(ident) => write!(f, "LexerError: {}", ident),
+            LexerError::InvalidNumber(number) => write!(f, "LexerError: {}", number),
+            LexerError::UnclosedString(string) => write!(f, "LexerError: {}", string),
+        }
+    }
+}
+impl error::Error for LexerError {}
 
 impl Lexer {
     pub fn new(input: String) -> Lexer {

@@ -1,5 +1,6 @@
 //import lexer
 
+mod interpretator;
 mod lexer;
 mod nodes;
 mod parser;
