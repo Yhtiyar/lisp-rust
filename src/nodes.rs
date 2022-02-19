@@ -1,6 +1,6 @@
 use super::interpretator::Scope;
 use std::collections::HashMap;
-
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Number(f64),
@@ -15,7 +15,13 @@ pub enum Value {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Function {
     Native(NativeFunction),
-    UserDefined(Vec<String>, Vec<Node>),
+    UserDefined(UserDefinedFunction),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct UserDefinedFunction {
+    pub args: Vec<String>,
+    pub body: Vec<Node>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -39,14 +45,47 @@ impl Node {
         match self {
             Node::Atom(v) => Ok(v.clone()),
             Node::FunctionCall(name, args) => {
-                let mut evaluated_args = Vec::new();
-                for arg in args {
-                    evaluated_args.push(arg.evaluate(scope)?);
-                }
-                let func = scope.get(&name).unwrap();
+                let func = match scope.get(&name) {
+                    Some(v) => v,
+                    None => return Err(format!("{} is not defined", name)),
+                };
+
                 match func {
                     Value::Function(f) => {
-                        unimplemented!()
+                        let mut new_scope = Scope::new(Some(scope));
+                        let arg_names = match f {
+                            Function::UserDefined(f) => f.args.clone(),
+                            Function::Native(f) => f.args.clone(),
+                        };
+
+                        if args.len() != arg_names.len() {
+                            return Err(format!(
+                                "Function {} takes {} arguments, but {} were given",
+                                name,
+                                arg_names.len(),
+                                args.len()
+                            ));
+                        }
+                        let mut evaluated_args = vec![];
+                        for (i, arg) in args.iter().enumerate() {
+                            let arg_val = arg.evaluate(scope)?;
+                            new_scope.set(arg_names[i].clone(), arg_val.clone());
+                            evaluated_args.push(arg_val);
+                        }
+
+                        let result = match f {
+                            Function::UserDefined(f) => {
+                                let new_scope = Scope::new(Some(&new_scope));
+                                let mut result = Ok(Value::Null);
+                                for node in &f.body {
+                                    result = node.evaluate(&new_scope);
+                                }
+
+                                return result;
+                            }
+                            Function::Native(f) => (f.func)(evaluated_args),
+                        };
+                        result
                     }
                     _ => Err(format!("{} is not a function", name)),
                 }
@@ -80,15 +119,7 @@ impl Value {
                     .map(|(k, v)| (k.clone(), v.evaluate(scope)))
                     .collect(),
             ),
-            Value::Function(f) => match f {
-                Function::Native(nf) => {
-                    unimplemented!()
-                }
-                Function::UserDefined(args, body) => {
-                    let mut new_scope = Scope::new(Some(scope.clone()));
-                    unimplemented!()
-                }
-            },
+            Value::Function(f) => Value::Function(f.clone()),
             Value::Null => Value::Null,
         }
     }

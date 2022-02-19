@@ -1,9 +1,22 @@
 use super::{nodes::*, parser::*};
 use std::collections::HashMap;
 use std::error;
+use std::fmt;
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum InterpretatorError {
     CastError(String),
+    EvaluationError(String),
+}
+impl error::Error for InterpretatorError {}
+
+impl fmt::Display for InterpretatorError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            InterpretatorError::CastError(s) => write!(f, "CastError: {}", s),
+            InterpretatorError::EvaluationError(s) => write!(f, "EvaluationError: {}", s),
+        }
+    }
 }
 
 pub trait Cast {
@@ -85,7 +98,7 @@ impl Cast for Value {
         }
     }
 }
-
+#[derive(Debug)]
 pub struct Scope<'a> {
     pub variables: HashMap<String, Value>,
     pub parent: Option<Box<&'a Scope<'a>>>,
@@ -134,9 +147,13 @@ impl<'a> Interpretator<'a> {
     }
 
     pub fn run(&mut self, source: String) -> Result<Value, Box<dyn error::Error>> {
-        let parser = Parser::from_source(source)?;
-        //let program = parser.parse()?;
-        unimplemented!();
+        let mut parser = Parser::from_source(source)?;
+        let program = parser.parseProgram()?;
+
+        match program.evaluate(&self.global_scope) {
+            Ok(v) => Ok(v),
+            Err(e) => Err(Box::new(InterpretatorError::EvaluationError(e))),
+        }
     }
 }
 
